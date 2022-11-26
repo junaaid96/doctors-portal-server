@@ -25,6 +25,7 @@ async function run() {
         const bookingsCollection = client
             .db("doctorsPortal")
             .collection("bookings");
+        const usersCollection = client.db("doctorsPortal").collection("users");
 
         // Use Aggregate to query multiple collection and then merge data
         app.get("/appointmentOptions", async (req, res) => {
@@ -112,11 +113,8 @@ async function run() {
 
         app.post("/bookings", async (req, res) => {
             const booking = req.body;
-            console.log(booking);
             const query = {
-                appointmentDate: booking.appointmentDate,
                 email: booking.email,
-                treatment: booking.treatment,
             };
 
             const alreadyBooked = await bookingsCollection
@@ -129,6 +127,24 @@ async function run() {
             }
 
             const result = await bookingsCollection.insertOne(booking);
+            res.send(result);
+        });
+
+        app.get("/bookings", async (req, res) => {
+            const query = { email: req.query.email };
+            const bookings = await bookingsCollection.find(query).toArray();
+            res.send(bookings);
+        });
+
+        app.post("/users", async (req, res) => {
+            const user = req.body;
+            const query = { email: user.email };
+            const alreadyExists = await usersCollection.find(query).toArray();
+            if (alreadyExists.length) {
+                const message = `User already exists`;
+                return res.send({ acknowledged: false, message });
+            }
+            const result = await usersCollection.insertOne(user);
             res.send(result);
         });
     } finally {
